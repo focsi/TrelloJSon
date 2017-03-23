@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
+using Novacode;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,7 +16,7 @@ namespace TrelloJSon
         static void Main( string[] args )
         {
             Rootobject trello = LoadJson();
-            Write( trello );
+            WriteDocX( trello );
             Console.ReadLine();
         }
 
@@ -28,7 +30,7 @@ namespace TrelloJSon
             }
             return ret;
         }
-        private static void Write( Rootobject trello )
+        private static void WriteConsole( Rootobject trello )
         {
             foreach( var list in trello.lists )
             {
@@ -53,6 +55,42 @@ namespace TrelloJSon
                 }
 
             }
+        }
+
+        private static void WriteDocX( Rootobject trello )
+        {
+            string fileName = @"DocXExample.docx";
+            // Create a document in memory:
+            var doc = DocX.Create( fileName );
+
+            foreach( var list in trello.lists )
+            {
+                Paragraph paragraph = doc.InsertParagraph( list.name );
+                paragraph.StyleName = "Heading1";
+
+                var cards = trello.cards.Where( c => c.idList == list.id );
+                foreach( var card in cards )
+                {
+                    paragraph = doc.InsertParagraph( card.name );
+                    paragraph.StyleName = "Heading5";
+
+                    var hozzaszolasok = trello.actions.Where( a => a.type == "commentCard" && a.data.card?.id == card.id ).OrderBy( a => a.date ).ToArray();
+                    if ( hozzaszolasok.Count() > 0 )
+                    {
+                        var bulletedList = doc.AddList( hozzaszolasok[0].data.text, 0, ListItemType.Bulleted );
+                        for( int i = 1; i < hozzaszolasok.Count(); i++ )
+                            doc.AddListItem( bulletedList, hozzaszolasok[i].data.text );
+
+                        doc.InsertList( bulletedList );
+
+                    }
+                }
+
+            }
+
+            doc.Save();
+
+            Process.Start( "WINWORD.EXE", fileName );
         }
     }
 }
