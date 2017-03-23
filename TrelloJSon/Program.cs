@@ -15,33 +15,42 @@ namespace TrelloJSon
     {
         static void Main( string[] args )
         {
-            Console.WriteLine( "Feldolgozás indul" );
-            if( args.Length == 0 )
+            Console.WriteLine( "Start" );
+            try
             {
-                Console.WriteLine( "Missing json file path. Usage: TrelloJSon test.json" );
-                return;
+                if( args.Length == 0 )
+                {
+                    Console.WriteLine( "Missing json file path. Usage: TrelloJSon test.json" );
+                    return;
+                }
+
+                Rootobject trello = LoadJson( args[0] );
+
+                if( trello == null )
+                {
+                    Console.WriteLine( "JSon reading has not result" );
+                    return;
+                }
+
+                Parser parser = new Parser( trello );
+
+                if( args.Length == 2 )
+                {
+                    WriteDocX( parser, args[1] );
+                }
+                else
+                {
+                    WriteConsole( parser );
+                }
+
             }
-
-            Rootobject trello = LoadJson( args[0] );
-
-            if ( trello == null )
+            catch( Exception ex )
             {
-                Console.WriteLine( "JSon beolvasás nem adott vissza eredményt" );
-                return;
-            }
+                Console.WriteLine( $"Error: {ex.Message} " );
 
-            Parser parser = new Parser( trello );
-
-            if( args.Length == 2 )
-            {
-                WriteDocX( parser, args[1] );
+                throw;
             }
-            else
-            {
-                WriteConsole( parser );
-            }
-
-            Console.WriteLine( "Feldolgozás kész" );
+            Console.WriteLine( "End" );
         }
 
         public static Rootobject LoadJson( string jsonPath )
@@ -58,33 +67,41 @@ namespace TrelloJSon
             }
             catch( Exception ex )
             {
-                Console.WriteLine( $"Hiba a JSon beolvasás során: {ex.Message} " );
+                Console.WriteLine( $"JSon reading error: {ex.Message} " );
                 return null;
             }
         }
 
         private static void WriteConsole( Parser parser )
         {
-            foreach( var list in parser.GetLists() )
+            try
             {
-                Console.WriteLine( list.name );
-                Console.WriteLine( "= = = = =" );
 
-                var cards = parser.GetCards( list );
-                foreach( var card in cards )
+                foreach( var list in parser.GetLists() )
                 {
-                    Console.WriteLine( card.name );
+                    Console.WriteLine( list.name );
+                    Console.WriteLine( "= = = = =" );
 
-                    Console.WriteLine( "vvvvvv" );
-                    var hozzaszolasok = parser.GetComments( card );
-                    foreach( var hozzaszolas in hozzaszolasok )
+                    var cards = parser.GetCards( list );
+                    foreach( var card in cards )
                     {
-                        Console.WriteLine( hozzaszolas.data.text );
-                        Console.WriteLine( "---" );
-                    }
+                        Console.WriteLine( card.name );
 
-                    Console.WriteLine( "^^^^^^^^^" );
+                        Console.WriteLine( "vvvvvv" );
+                        var hozzaszolasok = parser.GetComments( card );
+                        foreach( var comment in hozzaszolasok )
+                        {
+                            Console.WriteLine( comment.data.text );
+                            Console.WriteLine( "---" );
+                        }
+
+                        Console.WriteLine( "^^^^^^^^^" );
+                    }
                 }
+            }
+            catch( Exception ex )
+            {
+                Console.WriteLine( $"DocX saving error: {ex.Message} " );
             }
         }
 
@@ -106,12 +123,12 @@ namespace TrelloJSon
                         paragraph = doc.InsertParagraph( card.name );
                         paragraph.StyleName = "Heading5";
 
-                        var hozzaszolasok = parser.GetComments(card ).ToArray();
-                        if ( hozzaszolasok.Count() > 0 )
+                        var comment = parser.GetComments(card ).ToArray();
+                        if ( comment.Count() > 0 )
                         {
-                            var bulletedList = doc.AddList( hozzaszolasok[0].data.text, 0, ListItemType.Bulleted );
-                            for( int i = 1; i < hozzaszolasok.Count(); i++ )
-                                doc.AddListItem( bulletedList, hozzaszolasok[i].data.text );
+                            var bulletedList = doc.AddList( comment[0].data.text, 0, ListItemType.Bulleted );
+                            for( int i = 1; i < comment.Count(); i++ )
+                                doc.AddListItem( bulletedList, comment[i].data.text );
 
                             doc.InsertList( bulletedList );
                         }
@@ -122,9 +139,7 @@ namespace TrelloJSon
             }
             catch( Exception ex)
             {
-                Console.WriteLine( $"Hiba a mentés során: {ex.Message} " );
-
-                
+                Console.WriteLine( $"DocX saving error: {ex.Message} " );
             }
 
             //            Process.Start( "WINWORD.EXE", docPath );
