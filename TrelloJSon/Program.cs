@@ -15,21 +15,52 @@ namespace TrelloJSon
     {
         static void Main( string[] args )
         {
-            Rootobject trello = LoadJson();
-            WriteDocX( trello );
-            Console.ReadLine();
+            Console.WriteLine( "Feldolgozás indul" );
+            if( args.Length == 0 )
+            {
+                Console.WriteLine( "Missing json file path. Usage: TrelloJSon test.json" );
+                return;
+            }
+
+            Rootobject trello = LoadJson( args[0] );
+
+            if ( trello == null )
+            {
+                Console.WriteLine( "JSon beolvasás nem adott vissza eredményt" );
+                return;
+            }
+
+            if( args.Length == 2 )
+            {
+                WriteDocX( trello, args[1] );
+            }
+            else
+            {
+                WriteConsole( trello );
+            }
+
+            Console.WriteLine( "Feldolgozás kész" );
         }
 
-        public static Rootobject LoadJson()
+        public static Rootobject LoadJson( string jsonPath )
         {
-            Rootobject ret;
-            using( StreamReader r = new StreamReader( "file.json" ) )
+            try
             {
-                string json = r.ReadToEnd();
-                ret = JsonConvert.DeserializeObject<Rootobject>( json );
+                Rootobject ret;
+                using( StreamReader r = new StreamReader( jsonPath ) )
+                {
+                    string json = r.ReadToEnd();
+                    ret = JsonConvert.DeserializeObject<Rootobject>( json );
+                }
+                return ret;
             }
-            return ret;
+            catch( Exception ex )
+            {
+                Console.WriteLine( $"Hiba a JSon beolvasás során: {ex.Message} " );
+                return null;
+            }
         }
+
         private static void WriteConsole( Rootobject trello )
         {
             foreach( var list in trello.lists )
@@ -51,46 +82,51 @@ namespace TrelloJSon
                     }
 
                     Console.WriteLine( "^^^^^^^^^" );
-
                 }
-
             }
         }
 
-        private static void WriteDocX( Rootobject trello )
+        private static void WriteDocX( Rootobject trello, string docPath )
         {
-            string fileName = @"DocXExample.docx";
-            // Create a document in memory:
-            var doc = DocX.Create( fileName );
-
-            foreach( var list in trello.lists )
+            try
             {
-                Paragraph paragraph = doc.InsertParagraph( list.name );
-                paragraph.StyleName = "Heading1";
+                // Create a document in memory:
+                var doc = DocX.Create( docPath );
 
-                var cards = trello.cards.Where( c => c.idList == list.id );
-                foreach( var card in cards )
+                foreach( var list in trello.lists )
                 {
-                    paragraph = doc.InsertParagraph( card.name );
-                    paragraph.StyleName = "Heading5";
+                    Paragraph paragraph = doc.InsertParagraph( list.name );
+                    paragraph.StyleName = "Heading1";
 
-                    var hozzaszolasok = trello.actions.Where( a => a.type == "commentCard" && a.data.card?.id == card.id ).OrderBy( a => a.date ).ToArray();
-                    if ( hozzaszolasok.Count() > 0 )
+                    var cards = trello.cards.Where( c => c.idList == list.id );
+                    foreach( var card in cards )
                     {
-                        var bulletedList = doc.AddList( hozzaszolasok[0].data.text, 0, ListItemType.Bulleted );
-                        for( int i = 1; i < hozzaszolasok.Count(); i++ )
-                            doc.AddListItem( bulletedList, hozzaszolasok[i].data.text );
+                        paragraph = doc.InsertParagraph( card.name );
+                        paragraph.StyleName = "Heading5";
 
-                        doc.InsertList( bulletedList );
+                        var hozzaszolasok = trello.actions.Where( a => a.type == "commentCard" && a.data.card?.id == card.id ).OrderBy( a => a.date ).ToArray();
+                        if ( hozzaszolasok.Count() > 0 )
+                        {
+                            var bulletedList = doc.AddList( hozzaszolasok[0].data.text, 0, ListItemType.Bulleted );
+                            for( int i = 1; i < hozzaszolasok.Count(); i++ )
+                                doc.AddListItem( bulletedList, hozzaszolasok[i].data.text );
 
+                            doc.InsertList( bulletedList );
+
+                        }
                     }
                 }
 
+                doc.Save();
+            }
+            catch( Exception ex)
+            {
+                Console.WriteLine( $"Hiba a mentés során: {ex.Message} " );
+
+                
             }
 
-            doc.Save();
-
-            Process.Start( "WINWORD.EXE", fileName );
+            //            Process.Start( "WINWORD.EXE", docPath );
         }
     }
 }
