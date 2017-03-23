@@ -30,13 +30,15 @@ namespace TrelloJSon
                 return;
             }
 
+            Parser parser = new Parser( trello );
+
             if( args.Length == 2 )
             {
-                WriteDocX( trello, args[1] );
+                WriteDocX( parser, args[1] );
             }
             else
             {
-                WriteConsole( trello );
+                WriteConsole( parser );
             }
 
             Console.WriteLine( "Feldolgozás kész" );
@@ -61,20 +63,20 @@ namespace TrelloJSon
             }
         }
 
-        private static void WriteConsole( Rootobject trello )
+        private static void WriteConsole( Parser parser )
         {
-            foreach( var list in trello.lists )
+            foreach( var list in parser.GetLists() )
             {
                 Console.WriteLine( list.name );
                 Console.WriteLine( "= = = = =" );
 
-                var cards = trello.cards.Where( c => c.idList == list.id );
+                var cards = parser.GetCards( list );
                 foreach( var card in cards )
                 {
                     Console.WriteLine( card.name );
 
                     Console.WriteLine( "vvvvvv" );
-                    var hozzaszolasok = trello.actions.Where( a => a.type == "commentCard" && a.data.card?.id == card.id );
+                    var hozzaszolasok = parser.GetComments( card );
                     foreach( var hozzaszolas in hozzaszolasok )
                     {
                         Console.WriteLine( hozzaszolas.data.text );
@@ -86,25 +88,25 @@ namespace TrelloJSon
             }
         }
 
-        private static void WriteDocX( Rootobject trello, string docPath )
+        private static void WriteDocX( Parser parser, string docPath )
         {
             try
             {
                 // Create a document in memory:
                 var doc = DocX.Create( docPath );
 
-                foreach( var list in trello.lists )
+                foreach( var list in parser.GetLists() )
                 {
                     Paragraph paragraph = doc.InsertParagraph( list.name );
                     paragraph.StyleName = "Heading1";
 
-                    var cards = trello.cards.Where( c => c.idList == list.id );
+                    var cards = parser.GetCards( list );
                     foreach( var card in cards )
                     {
                         paragraph = doc.InsertParagraph( card.name );
                         paragraph.StyleName = "Heading5";
 
-                        var hozzaszolasok = trello.actions.Where( a => a.type == "commentCard" && a.data.card?.id == card.id ).OrderBy( a => a.date ).ToArray();
+                        var hozzaszolasok = parser.GetComments(card ).ToArray();
                         if ( hozzaszolasok.Count() > 0 )
                         {
                             var bulletedList = doc.AddList( hozzaszolasok[0].data.text, 0, ListItemType.Bulleted );
@@ -112,7 +114,6 @@ namespace TrelloJSon
                                 doc.AddListItem( bulletedList, hozzaszolasok[i].data.text );
 
                             doc.InsertList( bulletedList );
-
                         }
                     }
                 }
