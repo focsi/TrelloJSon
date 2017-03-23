@@ -80,22 +80,17 @@ namespace TrelloJSon
                 foreach( var list in parser.GetLists() )
                 {
                     Console.WriteLine( list.name );
-                    Console.WriteLine( "= = = = =" );
 
                     var cards = parser.GetCards( list );
                     foreach( var card in cards )
                     {
-                        Console.WriteLine( card.name );
+                        Console.WriteLine( $"   {card.name}" );
 
-                        Console.WriteLine( "vvvvvv" );
                         var hozzaszolasok = parser.GetComments( card );
                         foreach( var comment in hozzaszolasok )
                         {
-                            Console.WriteLine( comment.data.text );
-                            Console.WriteLine( "---" );
+                            Console.WriteLine( $"       {comment.data.text}" );
                         }
-
-                        Console.WriteLine( "^^^^^^^^^" );
                     }
                 }
             }
