@@ -86,8 +86,8 @@ namespace TrelloJSon
                     {
                         Console.WriteLine( $"   {card.name}" );
 
-                        var hozzaszolasok = parser.GetComments( card );
-                        foreach( var comment in hozzaszolasok )
+                        var comments = parser.GetComments( card );
+                        foreach( var comment in comments )
                         {
                             Console.WriteLine( $"       {comment.data.text}" );
                         }
@@ -118,12 +118,12 @@ namespace TrelloJSon
                         paragraph = doc.InsertParagraph( card.name );
                         paragraph.StyleName = "Heading5";
 
-                        var comment = parser.GetComments(card ).ToArray();
-                        if ( comment.Count() > 0 )
+                        var comments = parser.GetComments(card ).ToArray();
+                        if ( comments.Count() > 0 )
                         {
-                            var bulletedList = doc.AddList( comment[0].data.text, 0, ListItemType.Bulleted );
-                            for( int i = 1; i < comment.Count(); i++ )
-                                doc.AddListItem( bulletedList, comment[i].data.text );
+                            var bulletedList = doc.AddList( comments[0].data.text, 0, ListItemType.Bulleted );
+                            for( int i = 1; i < comments.Count(); i++ )
+                                doc.AddListItem( bulletedList, comments[i].data.text );
 
                             doc.InsertList( bulletedList );
                         }
