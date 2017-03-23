@@ -118,15 +118,8 @@ namespace TrelloJSon
                         paragraph = doc.InsertParagraph( card.name );
                         paragraph.StyleName = "Heading5";
 
-                        var comments = parser.GetComments(card ).ToArray();
-                        if ( comments.Count() > 0 )
-                        {
-                            var bulletedList = doc.AddList( comments[0].data.text, 0, ListItemType.Bulleted );
-                            for( int i = 1; i < comments.Count(); i++ )
-                                doc.AddListItem( bulletedList, comments[i].data.text );
-
-                            doc.InsertList( bulletedList );
-                        }
+                        var comments = parser.GetComments( card ).Select( a => a.data.text ).ToArray();
+                        InsertBulletedList( doc, comments );
                     }
                 }
 
@@ -138,6 +131,18 @@ namespace TrelloJSon
             }
 
             //            Process.Start( "WINWORD.EXE", docPath );
+        }
+
+        private static void InsertBulletedList( DocX doc, string[] comments )
+        {
+            if( comments.Count() > 0 )
+            {
+                var bulletedList = doc.AddList( comments[0], 0, ListItemType.Bulleted );
+                for( int i = 1; i < comments.Count(); i++ )
+                    doc.AddListItem( bulletedList, comments[i] );
+
+                doc.InsertList( bulletedList );
+            }
         }
     }
 }
